@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ekadasi Fasting Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .page {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .active-page {
+            display: block;
+        }
+        
+        .nav-gradient {
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .room-btn, .bed-btn { /* Added .bed-btn */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .room-btn:hover, .bed-btn:hover { /* Added .bed-btn */
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .cup-option {
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .cup-option:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        .selected {
+            border: 3px solid #ffffff !important;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .bed-btn.selected-bed {
+            border: 3px solid #4facfe !important; /* Highlight selected beds */
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.7);
+        }
+        
+        .stats-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            backdrop-filter: blur(10px);
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 45px rgba(31, 38, 135, 0.25);
+        }
+        
+        .filter-btn {
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+        
+        .filter-btn:hover {
+            background: linear-gradient(45deg, #ee5a52, #ff6b6b);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .notification {
+            background: linear-gradient(45deg, #00b09b, #96c93d);
+            box-shadow: 0 10px 30px rgba(0, 176, 155, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            background: linear-gradient(45deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(118, 75, 162, 0.3);
+        }
+        
+        .floor-btn {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            box-shadow: 0 6px 20px rgba(168, 237, 234, 0.3);
+        }
+        
+        .floor-btn:hover {
+            background: linear-gradient(135deg, #fed6e3 0%, #a8edea 100%);
+            transform: translateY(-3px);
+        }
+        
+        .header-text {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96c93d);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 4s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Mobile View Specific Styles */
+        body.mobile-view #roomsContainer {
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Adjust for mobile */
+            gap: 10px;
+        }
+
+        body.mobile-view #bedsContainer {
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Adjust for mobile */
+            gap: 8px;
+        }
+
+        body.mobile-view .room-btn,
+        body.mobile-view .bed-btn {
+            padding: 15px 10px; /* Larger tap area */
+            font-size: 1.1rem;
+        }
+
+        body.mobile-view .bed-btn span.text-xs {
+            font-size: 0.8rem;
+        }
+
+        body.mobile-view .cup-option {
+            padding: 20px;
+        }
+
+        body.mobile-view .cup-option .text-5xl {
+            font-size: 3rem;
+        }
+
+        body.mobile-view .cup-option .font-bold {
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <!-- Navigation -->
+    <nav class="nav-gradient text-white p-4 shadow-2xl sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold header-text">Ekadasi Fasting Tracker</h1>
+            <div class="space-x-4 flex flex-wrap gap-2">
+                <button onclick="showPage('page1')" class="px-6 py-3 bg-white/20 backdrop-blur-md rounded-xl hover:bg-white/30 transition-all duration-300 font-semibold border border-white/30">
+                    📥 Submit Data
+                </button>
+                <button onclick="showPage('page2')" class="px-6 py-3 bg-white/20 backdrop-blur-md rounded-xl hover:bg-white/30 transition-all duration-300 font-semibold border border-white/30">
+                    📊 Reports
+                </button>
+                <button onclick="showPage('page3')" class="px-6 py-3 bg-white/20 backdrop-blur-md rounded-xl hover:bg-white/30 transition-all duration-300 font-semibold border border-white/30">
+                    📋 All Records
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page 1: Data Submission -->
+    <div id="page1" class="page active-page">
+        <div class="container mx-auto py-8 max-w-6xl">
+            <div class="glass-effect rounded-3xl p-8 mb-8">
+                <h2 class="text-4xl font-bold text-center mb-8 header-text">Ekadasi Fasting Data Submission</h2>
+                
+                <!-- Mobile View Toggle -->
+                <div class="text-center mb-8">
+                    <button onclick="toggleMobileView()" id="mobileViewToggle" class="px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all duration-300">
+                        📱 Mobile View
+                    </button>
+                </div>
+
+                <!-- Floor Selection -->
+                <div class="mb-8">
+                    <h3 class="text-2xl font-semibold mb-6 text-gray-700 text-center">Select Floor:</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-6">
+                        <button onclick="selectFloor(1)" class="floor-btn room-btn px-6 py-4 border-2 border-white/30 rounded-2xl text-center font-semibold text-lg transition-all">
+                            🏢 Floor 1
+                        </button>
+                        <button onclick="selectFloor(2)" class="floor-btn room-btn px-6 py-4 border-2 border-white/30 rounded-2xl text-center font-semibold text-lg transition-all">
+                            🏢 Floor 2
+                        </button>
+                        <button onclick="selectFloor(3)" class="floor-btn room-btn px-6 py-4 border-2 border-white/30 rounded-2xl text-center font-semibold text-lg transition-all">
+                            🏢 Floor 3
+                        </button>
+                        <button onclick="selectFloor(4)" class="floor-btn room-btn px-6 py-4 border-2 border-white/30 rounded-2xl text-center font-semibold text-lg transition-all">
+                            🏢 Floor 4
+                        </button>
+                        <button onclick="selectFloor(5)" class="floor-btn room-btn px-6 py-4 border-2 border-white/30 rounded-2xl text-center font-semibold text-lg transition-all">
+                            🏢 Floor 5
+                        </button>
+                        <button onclick="selectFloor(6)" class="floor-btn room-btn px-6 py-4 border-2 border-white/30 rounded-2xl text-center font-semibold text-lg transition-all">
+                            🏢 Floor 6
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Room Selection -->
+            <div id="roomSelection" class="glass-effect rounded-3xl p-8 mb-8 hidden">
+                <h3 class="text-2xl font-semibold mb-6 text-gray-700 text-center">Select Room:</h3>
+                <div id="roomsContainer" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mb-6"></div>
+            </div>
+
+            <!-- Bed Selection -->
+            <div id="bedSelection" class="glass-effect rounded-3xl p-8 mb-8 hidden">
+                <h3 class="text-2xl font-semibold mb-6 text-gray-700 text-center">Select Bed(s) for Room <span id="currentRoomNumberBed" class="text-blue-600 font-bold">___</span>:</h3>
+                <div id="bedsContainer" class="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-16 gap-3 mb-6"></div>
+                <div class="text-center mt-6">
+                    <button onclick="showCupSelection()" class="px-8 py-3 btn-gradient text-white rounded-2xl font-bold text-lg transition-all">
+                        Continue to Status Selection
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cup Selection -->
+            <div id="cupSelection" class="glass-effect rounded-3xl p-8 hidden">
+                <h3 class="text-2xl font-semibold mb-6 text-center text-gray-700">
+                    Select Option for Room <span id="currentRoomNumberCup" class="text-blue-600 font-bold">___</span>, Bed(s) <span id="currentBedNumbers" class="text-blue-600 font-bold">___</span>:
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div onclick="selectOption('fasting')" class="cup-option p-8 bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-300/50 rounded-2xl text-center cursor-pointer">
+                        <div class="text-5xl mb-4">🌿</div>
+                        <div class="font-bold text-green-800 text-xl">Fasting</div>
+                        <div class="text-green-600 mt-2">Spiritual purification</div>
+                    </div>
+                    
+                    <div onclick="selectOption('non-fasting')" class="cup-option p-8 bg-gradient-to-br from-red-100 to-red-200 border-2 border-red-300/50 rounded-2xl text-center cursor-pointer">
+                        <div class="text-5xl mb-4">🍽️</div>
+                        <div class="font-bold text-red-800 text-xl">Non-Fasting</div>
+                        <div class="text-red-600 mt-2">Regular meals</div>
+                    </div>
+                    
+                    <div onclick="selectOption('gatepass')" class="cup-option p-8 bg-gradient-to-br from-yellow-100 to-yellow-200 border-2 border-yellow-300/50 rounded-2xl text-center cursor-pointer">
+                        <div class="text-5xl mb-4">🚪</div>
+                        <div class="font-bold text-yellow-800 text-xl">Gatepass</div>
+                        <div class="text-yellow-600 mt-2">Temporarily away</div>
+                    </div>
+                    
+                    <div onclick="selectOption('empty')" class="cup-option p-8 bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300/50 rounded-2xl text-center cursor-pointer">
+                        <div class="text-5xl mb-4">🏢</div>
+                        <div class="font-bold text-gray-800 text-xl">Empty Bed</div>
+                        <div class="text-gray-600 mt-2">Currently unoccupied</div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label for="remarkInput" class="block text-lg font-semibold text-gray-700 mb-2">Add Remark (Optional):</label>
+                    <input type="text" id="remarkInput" class="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="e.g., Sick, Traveling, etc.">
+                </div>
+                
+                <div class="text-center">
+                    <button onclick="submitBedData()" class="px-10 py-4 btn-gradient text-white rounded-2xl font-bold text-xl transition-all pulse">
+                        ✅ Submit Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notification -->
+            <div id="notification" class="fixed top-6 right-6 p-6 notification text-white rounded-2xl shadow-2xl transform transition-all duration-500 opacity-0 z-50">
+                <div class="flex items-center">
+                    <span class="text-3xl mr-3">🙏</span>
+                    <div>
+                        <div class="font-bold text-lg">Thank you!</div>
+                        <div>Data submitted successfully!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: Reports -->
+    <div id="page2" class="page">
+        <div class="container mx-auto py-8 max-w-6xl">
+            <div class="glass-effect rounded-3xl p-8 mb-8">
+                <h2 class="text-4xl font-bold text-center mb-8 header-text">Ekadasi Fasting Reports</h2>
+                
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stats-card p-6 rounded-2xl border-l-8 border-green-500">
+                        <h3 class="text-3xl font-bold text-green-600 mb-2" id="totalFasting">0</h3>
+                        <p class="text-gray-600 font-semibold">Total Fasting</p>
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card p-6 rounded-2xl border-l-8 border-red-500">
+                        <h3 class="text-3xl font-bold text-red-600 mb-2" id="totalNonFasting">0</h3>
+                        <p class="text-gray-600 font-semibold">Total Non-Fasting</p>
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card p-6 rounded-2xl border-l-8 border-yellow-500">
+                        <h3 class="text-3xl font-bold text-yellow-600 mb-2" id="totalGatepass">0</h3>
+                        <p class="text-gray-600 font-semibold">Total Gatepass</p>
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card p-6 rounded-2xl border-l-8 border-gray-500">
+                        <h3 class="text-3xl font-bold text-gray-600 mb-2" id="totalEmpty">0</h3>
+                        <p class="text-gray-600 font-semibold">Total Empty Beds</p>
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-gray-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- New Transition Cards -->
+                    <div class="stats-card p-6 rounded-2xl border-l-8 border-orange-500">
+                        <h3 class="text-3xl font-bold text-orange-600 mb-2" id="fastingToNonFasting">0</h3>
+                        <p class="text-gray-600 font-semibold">Fasting → Non-Fasting</p>
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-orange-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="stats-card p-6 rounded-2xl border-l-8 border-blue-500">
+                        <h3 class="text-3xl font-bold text-blue-600 mb-2" id="nonFastingToFasting">0</h3>
+                        <p class="text-gray-600 font-semibold">Non-Fasting → Fasting</p>
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Non-Fasting Rooms -->
+            <div class="glass-effect rounded-3xl p-8 mb-8">
+                <div class="flex items-center mb-6">
+                    <span class="text-3xl mr-3">🎉</span>
+                    <h3 class="text-2xl font-semibold text-green-700">Rooms with No Non-Fasting Beds - Excellent!</h3>
+                </div>
+                <div id="noNonFastingRooms" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+            </div>
+
+            <!-- Max Non-Fasting Rooms -->
+            <div class="glass-effect rounded-3xl p-8">
+                <div class="flex items-center mb-6">
+                    <span class="text-3xl mr-3">⚠️</span>
+                    <h3 class="text-2xl font-semibold text-red-700">Rooms with Highest Non-Fasting Beds - Attention Needed</h3>
+                </div>
+                <div id="maxNonFastingRooms" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 3: All Records -->
+    <div id="page3" class="page">
+        <div class="container mx-auto py-8 max-w-7xl">
+            <div class="glass-effect rounded-3xl p-8 mb-8">
+                <h2 class="text-4xl font-bold text-center mb-8 header-text">All Records & Analytics</h2>
+                
+                <!-- Filters -->
+                <div class="bg-white/80 rounded-2xl p-6 mb-8 backdrop-blur-md">
+                    <h3 class="text-2xl font-semibold mb-6 text-center">🔍 Advanced Filters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">🏢 Floor</label>
+                            <select id="floorFilter" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
+                                <option value="all">All Floors</option>
+                                <option value="1">Floor 1</option>
+                                <option value="2">Floor 2</option>
+                                <option value="3">Floor 3</option>
+                                <option value="4">Floor 4</option>
+                                <option value="5">Floor 5</option>
+                                <option value="6">Floor 6</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">🚪 Room</label>
+                            <select id="roomFilter" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-200 transition">
+                                <option value="all">All Rooms</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">🛏️ Bed</label>
+                            <select id="bedFilter" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-200 transition">
+                                <option value="all">All Beds</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">📅 Date</label>
+                            <input type="date" id="dateFilter" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-200 transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">📊 Status</label>
+                            <select id="statusFilter" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-200 transition">
+                                <option value="all">All Status</option>
+                                <option value="fasting">Fasting</option>
+                                <option value="non-fasting">Non-Fasting</option>
+                                <option value="gatepass">Gatepass</option>
+                                <option value="empty">Empty Bed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="applyFilters()" class="mt-6 px-8 py-3 filter-btn text-white rounded-xl font-semibold text-lg transition-all w-full">
+                        🚀 Apply Filters
+                    </button>
+                </div>
+
+                <!-- Floor-wise Statistics -->
+                <div class="bg-white/80 rounded-2xl p-6 mb-8 backdrop-blur-md">
+                    <h3 class="text-2xl font-semibold mb-6 text-center">📈 Floor-wise Statistics</h3>
+                    <div id="floorStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5"></div>
+                </div>
+
+                <!-- All Records Table -->
+                <div class="bg-white/80 rounded-2xl p-6 backdrop-blur-md">
+                    <h3 class="text-2xl font-semibold mb-6 text-center">📋 All Records</h3>
+                    <div class="overflow-x-auto rounded-2xl shadow-lg">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                                    <th class="p-4 text-left">📅 Date</th>
+                                    <th class="p-4 text-left">🏢 Floor</th>
+                                    <th class="p-4 text-left">🚪 Room</th>
+                                    <th class="p-4 text-left">🛏️ Bed</th>
+                                    <th class="p-4 text-left">📊 Status</th>
+                                    <th class="p-4 text-left">📝 Remark</th>
+                                    <th class="p-4 text-left">⏱️ Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsTable" class="bg-white/90">
+                                <!-- Records will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBuvaglekgjf_blxf9w-nmKzhgXqDLeY50",
+  authDomain: "ekadasi-464ec.firebaseapp.com",
+  projectId: "ekadasi-464ec",
+  storageBucket: "ekadasi-464ec.firebasestorage.app",
+  messagingSenderId: "675683678626",
+  appId: "1:675683678626:web:d2273346d33b10f05d9afb",
+  measurementId: "G-E92Z0H30E2"
+};
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const recordsRef = database.ref('ekadasiRecords'); // Reference to your main data node
+
+        // Data storage (will now be synced with Firebase)
+        let currentFloor = null;
+        let currentRoom = null;
+        let selectedBeds = []; // Changed to an array for multiple selections
+        let currentOption = null;
+        let allRecords = []; // This will be populated from Firebase
+
+        // Initialize the application
+        function init() {
+            // Listen for real-time updates from Firebase
+            recordsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                allRecords = [];
+                if (data) {
+                    // Firebase returns an object, convert it to an array for easier processing
+                    for (let key in data) {
+                        allRecords.push(data[key]);
+                    }
+                }
+                // After data is loaded/updated, refresh UI components
+                updateRoomButtons(); 
+                updateReports();
+                updateAllRecords();
+                populateRoomFilter();
+                populateBedFilter(); 
+            });
+        }
+
+        // Page navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active-page');
+            });
+            document.getElementById(pageId).classList.add('active-page');
+            
+            if (pageId === 'page2') {
+                updateReports();
+            } else if (pageId === 'page3') {
+                updateAllRecords();
+            }
+        }
+
+        // Toggle Mobile View
+        function toggleMobileView() {
+            document.body.classList.toggle('mobile-view');
+            const toggleButton = document.getElementById('mobileViewToggle');
+            if (document.body.classList.contains('mobile-view')) {
+                toggleButton.textContent = '💻 Desktop View';
+                toggleButton.classList.remove('bg-blue-500');
+                toggleButton.classList.add('bg-purple-500');
+            } else {
+                toggleButton.textContent = '📱 Mobile View';
+                toggleButton.classList.remove('bg-purple-500');
+                toggleButton.classList.add('bg-blue-500');
+            }
+            // Re-render room and bed buttons to apply new styles if visible
+            if (!document.getElementById('roomSelection').classList.contains('hidden')) {
+                updateRoomButtons();
+            }
+            if (!document.getElementById('bedSelection').classList.contains('hidden')) {
+                updateBedButtons();
+            }
+        }
+
+        // Floor selection
+        function selectFloor(floor) {
+            currentFloor = floor;
+            currentRoom = null; 
+            selectedBeds = []; // Reset selected beds
+            document.getElementById('roomSelection').classList.remove('hidden');
+            document.getElementById('bedSelection').classList.add('hidden'); 
+            document.getElementById('cupSelection').classList.add('hidden'); 
+            updateRoomButtons();
+        }
+
+        // Update room buttons based on selected floor
+        function updateRoomButtons() {
+            const container = document.getElementById('roomsContainer');
+            container.innerHTML = '';
+            
+            if (currentFloor) {
+                const startRoom = currentFloor * 100 + 1;
+                const endRoom = currentFloor * 100 + 14; 
+                
+                for (let room = startRoom; room <= endRoom; room++) {
+                    const roomHasData = allRecords.some(r => r.room === room.toString() && r.date === getTodayDate());
+                    
+                    const btn = document.createElement('button');
+                    btn.className = `room-btn px-4 py-3 border-2 rounded-xl text-center font-semibold transition-all ${
+                        roomHasData ? 
+                        'bg-gradient-to-br from-blue-200 to-blue-300 border-blue-400 text-blue-800' : 
+                        'bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-purple-100'
+                    }`;
+                    
+                    btn.innerHTML = `<span class="text-lg font-bold">${room}</span>`;
+                    
+                    btn.onclick = () => selectRoomNumber(room); 
+                    container.appendChild(btn);
+                }
+            }
+        }
+
+        // Room number selection
+        function selectRoomNumber(room) {
+            currentRoom = room;
+            selectedBeds = []; // Reset selected beds when room changes
+            document.getElementById('currentRoomNumberBed').textContent = room;
+            document.getElementById('bedSelection').classList.remove('hidden');
+            document.getElementById('cupSelection').classList.add('hidden'); 
+            updateBedButtons();
+        }
+
+        // Update bed buttons based on selected room
+        function updateBedButtons() {
+            const container = document.getElementById('bedsContainer');
+            container.innerHTML = '';
+            
+            if (currentRoom) {
+                for (let bed = 1; bed <= 16; bed++) { 
+                    const bedData = allRecords.find(r => r.room === currentRoom.toString() && r.bed === bed.toString() && r.date === getTodayDate());
+                    
+                    const btn = document.createElement('button');
+                    btn.className = `bed-btn px-3 py-2 border-2 rounded-xl text-center font-semibold text-sm transition-all ${
+                        bedData ? 
+                        (bedData.status === 'fasting' ? 'bg-gradient-to-br from-green-200 to-green-300 border-green-400 text-green-800' :
+                         bedData.status === 'non-fasting' ? 'bg-gradient-to-br from-red-200 to-red-300 border-red-400 text-red-800' :
+                         bedData.status === 'gatepass' ? 'bg-gradient-to-br from-yellow-200 to-yellow-300 border-yellow-400 text-yellow-800' :
+                         'bg-gradient-to-br from-gray-200 to-gray-300 border-gray-400 text-gray-800') :
+                        'bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-purple-100'
+                    } ${selectedBeds.includes(bed) ? 'selected-bed' : ''}`; // Add selected-bed class
+                    
+                    btn.innerHTML = bedData ? 
+                        `<span class="font-bold">Bed ${bed}</span><br><span class="text-xs">${bedData.status}</span>` :
+                        `<span class="font-bold">Bed ${bed}</span>`;
+                    
+                    btn.onclick = (event) => toggleBedSelection(bed, event.currentTarget); 
+                    container.appendChild(btn);
+                }
+            }
+        }
+
+        // Toggle bed selection
+        function toggleBedSelection(bed, element) {
+            const index = selectedBeds.indexOf(bed);
+            if (index > -1) {
+                selectedBeds.splice(index, 1); // Deselect
+                element.classList.remove('selected-bed');
+            } else {
+                selectedBeds.push(bed); // Select
+                element.classList.add('selected-bed');
+            }
+            // Update the displayed bed numbers for cup selection
+            document.getElementById('currentBedNumbers').textContent = selectedBeds.length > 0 ? selectedBeds.sort((a, b) => a - b).join(', ') : '___';
+        }
+
+        // Show cup selection after bed selection
+        function showCupSelection() {
+            if (selectedBeds.length === 0) {
+                alert('Please select at least one bed!');
+                return;
+            }
+            document.getElementById('currentRoomNumberCup').textContent = currentRoom;
+            document.getElementById('currentBedNumbers').textContent = selectedBeds.sort((a, b) => a - b).join(', ');
+            document.getElementById('cupSelection').classList.remove('hidden');
+            document.getElementById('bedSelection').classList.add('hidden'); // Hide bed selection after continuing
+            
+            // Reset selections
+            document.querySelectorAll('.cup-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            currentOption = null;
+            document.getElementById('remarkInput').value = ''; // Clear remark input
+        }
+
+        // Option selection
+        function selectOption(option) {
+            currentOption = option;
+            document.querySelectorAll('.cup-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
+        // Submit bed data
+        async function submitBedData() {
+            if (!currentFloor || !currentRoom || selectedBeds.length === 0 || !currentOption) {
+                alert('Please select floor, room, at least one bed, and an option!');
+                return;
+            }
+
+            const remark = document.getElementById('remarkInput').value.trim();
+
+            for (const bed of selectedBeds) {
+                const record = {
+                    date: getTodayDate(),
+                    floor: currentFloor,
+                    room: currentRoom.toString(),
+                    bed: bed.toString(), 
+                    status: currentOption,
+                    remark: remark,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Create a unique key for each record (e.g., date-floor-room-bed)
+                const recordKey = `${record.date}-${record.floor}-${record.room}-${record.bed}`;
+                
+                try {
+                    await recordsRef.child(recordKey).set(record); // Use .set() to overwrite or create
+                } catch (error) {
+                    console.error("Error writing to Firebase:", error);
+                    alert("Failed to submit data. Please check console for details.");
+                    return;
+                }
+            }
+            
+            // Show notification
+            const notification = document.getElementById('notification');
+            notification.classList.remove('opacity-0');
+            notification.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                notification.classList.remove('opacity-100');
+                notification.classList.add('opacity-0');
+            }, 3000);
+
+            // Reset and update
+            selectedBeds = []; // Clear selected beds
+            // updateBedButtons() and updateReports() will be called by the Firebase 'value' listener
+            document.getElementById('cupSelection').classList.add('hidden');
+            document.getElementById('bedSelection').classList.remove('hidden'); // Show bed selection again
+            currentOption = null;
+            document.getElementById('remarkInput').value = ''; // Clear remark input
+        }
+
+        // Helper to get yesterday's date
+        function getYesterdayDate() {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            return yesterday.toISOString().split('T')[0];
+        }
+
+        // Calculate status transitions
+        function calculateTransitions() {
+            let fastingToNonFasting = 0;
+            let nonFastingToFasting = 0;
+
+            const today = getTodayDate();
+            const yesterday = getYesterdayDate();
+
+            // Group records by bed for easier comparison
+            const recordsByBed = {};
+            allRecords.forEach(record => {
+                const bedIdentifier = `${record.floor}-${record.room}-${record.bed}`;
+                if (!recordsByBed[bedIdentifier]) {
+                    recordsByBed[bedIdentifier] = [];
+                }
+                recordsByBed[bedIdentifier].push(record);
+            });
+
+            for (const bedIdentifier in recordsByBed) {
+                const bedRecords = recordsByBed[bedIdentifier].sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                let yesterdayStatus = null;
+                let todayStatus = null;
+
+                // Find yesterday's and today's status for this specific bed
+                for (const record of bedRecords) {
+                    if (record.date === yesterday) {
+                        yesterdayStatus = record.status;
+                    }
+                    if (record.date === today) {
+                        todayStatus = record.status;
+                    }
+                }
+
+                if (yesterdayStatus === 'fasting' && todayStatus === 'non-fasting') {
+                    fastingToNonFasting++;
+                } else if (yesterdayStatus === 'non-fasting' && todayStatus === 'fasting') {
+                    nonFastingToFasting++;
+                }
+            }
+
+            return { fastingToNonFasting, nonFastingToFasting };
+        }
+
+
+        // Update reports page
+        function updateReports() {
+            const today = getTodayDate();
+            const todayRecords = allRecords.filter(r => r.date === today);
+            const totalPossibleBeds = 6 * 14 * 16; 
+            
+            // Update totals with progress bars (now counting beds)
+            const fastingCount = todayRecords.filter(r => r.status === 'fasting').length;
+            const nonFastingCount = todayRecords.filter(r => r.status === 'non-fasting').length;
+            const gatepassCount = todayRecords.filter(r => r.status === 'gatepass').length;
+            const emptyCount = todayRecords.filter(r => r.status === 'empty').length;
+            
+            document.getElementById('totalFasting').textContent = fastingCount;
+            document.getElementById('totalNonFasting').textContent = nonFastingCount;
+            document.getElementById('totalGatepass').textContent = gatepassCount;
+            document.getElementById('totalEmpty').textContent = emptyCount;
+            
+            // Update progress bars
+            document.querySelectorAll('.stats-card .bg-green-500').forEach(el => {
+                el.style.width = `${(fastingCount / totalPossibleBeds) * 100}%`;
+            });
+            document.querySelectorAll('.stats-card .bg-red-500').forEach(el => {
+                el.style.width = `${(nonFastingCount / totalPossibleBeds) * 100}%`;
+            });
+            document.querySelectorAll('.stats-card .bg-yellow-500').forEach(el => {
+                el.style.width = `${(gatepassCount / totalPossibleBeds) * 100}%`;
+            });
+            document.querySelectorAll('.stats-card .bg-gray-500').forEach(el => {
+                el.style.width = `${(emptyCount / totalPossibleBeds) * 100}%`;
+            });
+
+            // Calculate and display transitions
+            const transitions = calculateTransitions();
+            document.getElementById('fastingToNonFasting').textContent = transitions.fastingToNonFasting;
+            document.getElementById('nonFastingToFasting').textContent = transitions.nonFastingToFasting;
+
+            // Update progress bars for transitions (using a smaller base for visibility)
+            const totalTransitions = transitions.fastingToNonFasting + transitions.nonFastingToFasting;
+            document.querySelectorAll('.stats-card .bg-orange-500').forEach(el => {
+                el.style.width = totalTransitions > 0 ? `${(transitions.fastingToNonFasting / totalTransitions) * 100}%` : '0%';
+            });
+            document.querySelectorAll('.stats-card .bg-blue-500').forEach(el => {
+                el.style.width = totalTransitions > 0 ? `${(transitions.nonFastingToFasting / totalTransitions) * 100}%` : '0%';
+            });
+
+
+            // Find rooms with no non-fasting beds
+            const roomsWithNonFastingBeds = new Set(
+                todayRecords.filter(r => r.status === 'non-fasting').map(r => r.room)
+            );
+            
+            const allRooms = [];
+            for (let floor = 1; floor <= 6; floor++) {
+                for (let room = floor * 100 + 1; room <= floor * 100 + 14; room++) {
+                    allRooms.push(room.toString());
+                }
+            }
+            
+            const noNonFastingRooms = allRooms.filter(room => !roomsWithNonFastingBeds.has(room));
+            const noNonFastingContainer = document.getElementById('noNonFastingRooms');
+            noNonFastingContainer.innerHTML = '';
+            
+            noNonFastingRooms.forEach(room => {
+                const span = document.createElement('span');
+                span.className = 'px-4 py-3 bg-gradient-to-br from-green-100 to-green-200 border border-green-300 rounded-xl text-center font-semibold text-green-800';
+                span.textContent = room;
+                noNonFastingContainer.appendChild(span);
+            });
+
+            // Find rooms with max non-fasting beds
+            const maxNonFastingContainer = document.getElementById('maxNonFastingRooms');
+            maxNonFastingContainer.innerHTML = '';
+            
+            // Calculate rooms with highest non-fasting frequency (based on beds)
+            const roomNonFastingBedCount = {};
+            todayRecords.forEach(record => { // Changed to todayRecords for current day's report
+                if (record.status === 'non-fasting') {
+                    roomNonFastingBedCount[record.room] = (roomNonFastingBedCount[record.room] || 0) + 1;
+                }
+            });
+            
+            const maxCount = Math.max(...Object.values(roomNonFastingBedCount), 0);
+            const maxRooms = Object.keys(roomNonFastingBedCount).filter(room => roomNonFastingBedCount[room] === maxCount);
+            
+            maxRooms.forEach(room => {
+                const span = document.createElement('span');
+                span.className = 'px-4 py-3 bg-gradient-to-br from-red-100 to-red-200 border border-red-300 rounded-xl text-center font-semibold text-red-800';
+                span.textContent = room;
+                maxNonFastingContainer.appendChild(span);
+            });
+        }
+
+        // Update all records page
+        function updateAllRecords() {
+            updateFloorStats();
+            updateRecordsTable();
+        }
+
+        // Update floor statistics
+        function updateFloorStats() {
+            const container = document.getElementById('floorStats');
+            container.innerHTML = '';
+            
+            // Get the currently selected date from the filter
+            const dateFilterValue = document.getElementById('dateFilter').value;
+
+            for (let floor = 1; floor <= 6; floor++) {
+                // Filter records for the current floor and selected date
+                const floorRecords = allRecords.filter(r => 
+                    r.floor === floor && 
+                    (dateFilterValue === '' || r.date === dateFilterValue)
+                );
+
+                const fasting = floorRecords.filter(r => r.status === 'fasting').length;
+                const nonFasting = floorRecords.filter(r => r.status === 'non-fasting').length;
+                const gatepass = floorRecords.filter(r => r.status === 'gatepass').length;
+                const empty = floorRecords.filter(r => r.status === 'empty').length;
+                const total = floorRecords.length; 
+                
+                const card = document.createElement('div');
+                card.className = 'bg-gradient-to-br from-blue-50 to-purple-50 p-5 rounded-xl border-2 border-blue-200';
+                card.innerHTML = `
+                    <h4 class="font-bold text-blue-800 text-lg mb-3 text-center">Floor ${floor}</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold">Fasting Beds:</span>
+                            <span class="font-bold text-green-600">${fasting}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold">Non-Fasting Beds:</span>
+                            <span class="font-bold text-red-600">${nonFasting}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold">Gatepass Beds:</span>
+                            <span class="font-bold text-yellow-600">${gatepass}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold">Empty Beds:</span>
+                            <span class="font-bold text-gray-600">${empty}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold">Total Beds Recorded:</span>
+                            <span class="font-bold text-blue-600">${total}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        // Update records table
+        function updateRecordsTable() {
+            const tableBody = document.getElementById('recordsTable');
+            tableBody.innerHTML = '';
+            
+            const filteredRecords = filterRecords();
+            
+            if (filteredRecords.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-gray-500">
+                            <div class="text-4xl mb-4">📭</div>
+                            No records found matching your filters
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            filteredRecords.forEach(record => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-blue-50 transition-colors border-b border-gray-100';
+                row.innerHTML = `
+                    <td class="p-4 font-semibold">${record.date}</td>
+                    <td class="p-4">Floor ${record.floor}</td>
+                    <td class="p-4 font-semibold">${record.room}</td>
+                    <td class="p-4 font-semibold">${record.bed}</td> 
+                    <td class="p-4">
+                        <span class="px-3 py-2 rounded-full text-sm font-medium ${
+                            record.status === 'fasting' ? 'bg-green-100 text-green-800 border border-green-300' :
+                            record.status === 'non-fasting' ? 'bg-red-100 text-red-800 border border-red-300' :
+                            record.status === 'gatepass' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
+                            'bg-gray-100 text-gray-800 border border-gray-300'
+                        }">${record.status}</span>
+                    </td>
+                    <td class="p-4 text-sm text-gray-600">${record.remark || '-'}</td>
+                    <td class="p-4 text-sm text-gray-500">${new Date(record.timestamp).toLocaleString()}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Populate room filter
+        function populateRoomFilter() {
+            const roomFilter = document.getElementById('roomFilter');
+            roomFilter.innerHTML = '<option value="all">All Rooms</option>';
+            
+            for (let floor = 1; floor <= 6; floor++) {
+                for (let room = floor * 100 + 1; room <= floor * 100 + 14; room++) {
+                    const option = document.createElement('option');
+                    option.value = room;
+                    option.textContent = room;
+                    roomFilter.appendChild(option);
+                }
+            }
+        }
+
+        // Populate bed filter
+        function populateBedFilter() {
+            const bedFilter = document.getElementById('bedFilter');
+            bedFilter.innerHTML = '<option value="all">All Beds</option>';
+            
+            for (let bed = 1; bed <= 16; bed++) {
+                const option = document.createElement('option');
+                option.value = bed;
+                option.textContent = `Bed ${bed}`;
+                bedFilter.appendChild(option);
+            }
+        }
+
+        // Apply filters
+        function applyFilters() {
+            updateFloorStats(); // Update floor stats with the new date filter
+            updateRecordsTable();
+        }
+
+        // Filter records based on selected criteria
+        function filterRecords() {
+            const floorFilter = document.getElementById('floorFilter').value;
+            const roomFilter = document.getElementById('roomFilter').value;
+            const bedFilter = document.getElementById('bedFilter').value; 
+            const dateFilter = document.getElementById('dateFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            return allRecords.filter(record => {
+                if (floorFilter !== 'all' && record.floor !== parseInt(floorFilter)) return false;
+                if (roomFilter !== 'all' && record.room !== roomFilter) return false;
+                if (bedFilter !== 'all' && record.bed !== bedFilter) return false; 
+                if (dateFilter && record.date !== dateFilter) return false;
+                if (statusFilter !== 'all' && record.status !== statusFilter) return false;
+                return true;
+            }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by timestamp for latest changes
+        }
+
+        // Get today's date in YYYY-MM-DD format
+        function getTodayDate() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
