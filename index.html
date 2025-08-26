@@ -448,6 +448,13 @@
                     <div id="floorStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5"></div>
                 </div>
 
+                <!-- Export Data Button -->
+                <div class="text-center mb-6">
+                    <button onclick="exportRecords()" class="px-8 py-3 btn-gradient text-white rounded-2xl font-bold text-lg transition-all">
+                        ⬇️ Export All Records (CSV)
+                    </button>
+                </div>
+
                 <!-- All Records Table -->
                 <div class="bg-white/80 rounded-2xl p-6 backdrop-blur-md">
                     <h3 class="text-2xl font-semibold mb-6 text-center">📋 All Records</h3>
@@ -1029,6 +1036,45 @@ const firebaseConfig = {
         // Get today's date in YYYY-MM-DD format
         function getTodayDate() {
             return new Date().toISOString().split('T')[0];
+        }
+
+        // Function to export records to CSV
+        function exportRecords() {
+            const recordsToExport = filterRecords(); // Export filtered records
+
+            if (recordsToExport.length === 0) {
+                alert("No records to export based on current filters.");
+                return;
+            }
+
+            const headers = ["Date", "Floor", "Room", "Bed", "Status", "Remark", "Timestamp"];
+            const csvRows = [];
+
+            // Add headers
+            csvRows.push(headers.join(','));
+
+            // Add data rows
+            recordsToExport.forEach(record => {
+                const row = [
+                    record.date,
+                    record.floor,
+                    record.room,
+                    record.bed,
+                    record.status,
+                    `"${record.remark ? record.remark.replace(/"/g, '""') : ''}"`, // Handle commas and quotes in remarks
+                    new Date(record.timestamp).toLocaleString()
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `ekadasi_records_${getTodayDate()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // Initialize the app
