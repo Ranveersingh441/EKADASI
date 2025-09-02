@@ -177,6 +177,13 @@
         body.mobile-view .cup-option .font-bold {
             font-size: 1.2rem;
         }
+
+        /* Added for chart height control */
+        #floorWiseChartContainer {
+            position: relative;
+            height: 400px; /* Fixed height for the chart container */
+            width: 100%;
+        }
     </style>
 </head>
 <body class="text-gray-800">
@@ -376,7 +383,9 @@
                     <label for="reportDateFilter" class="block text-lg font-semibold text-gray-700 mb-2">Select Date for Chart:</label>
                     <input type="date" id="reportDateFilter" class="p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" onchange="updateReports()">
                 </div>
-                <canvas id="floorWiseChart"></canvas>
+                <div id="floorWiseChartContainer"> <!-- Added container for fixed height -->
+                    <canvas id="floorWiseChart"></canvas>
+                </div>
             </div>
 
             <!-- No Non-Fasting Rooms -->
@@ -516,7 +525,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDPdkKqPdY73A59To_x1pSSSB_vNyXb-3A",
   authDomain: "ekadasi-8ced1.firebaseapp.com",
@@ -1019,7 +1028,7 @@ const firebaseConfig = {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: false, // Crucial for fixed height
                     scales: {
                         x: {
                             stacked: true,
