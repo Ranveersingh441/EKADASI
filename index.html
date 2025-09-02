@@ -389,13 +389,32 @@
             </div>
 
             <!-- Max Non-Fasting Rooms -->
-            <div class="glass-effect rounded-3xl p-8">
+            <div class="glass-effect rounded-3xl p-8 mb-8">
                 <div class="flex items-center mb-6">
                     <span class="text-3xl mr-3">⚠️</span>
                     <h3 class="text-2xl font-semibold text-red-700">Rooms with Highest Non-Fasting Beds - Attention Needed</h3>
                 </div>
                 <div id="maxNonFastingRooms" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
             </div>
+
+            <!-- Rooms with Highest Fasting Beds -->
+            <div class="glass-effect rounded-3xl p-8 mb-8">
+                <div class="flex items-center mb-6">
+                    <span class="text-3xl mr-3">🏆</span>
+                    <h3 class="text-2xl font-semibold text-blue-700">Rooms with Highest Fasting Beds - Top Performers!</h3>
+                </div>
+                <div id="maxFastingRooms" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+            </div>
+
+            <!-- Rooms with Lowest Fasting Beds -->
+            <div class="glass-effect rounded-3xl p-8">
+                <div class="flex items-center mb-6">
+                    <span class="text-3xl mr-3">📉</span>
+                    <h3 class="text-2xl font-semibold text-orange-700">Rooms with Lowest Fasting Beds - Areas for Improvement</h3>
+                </div>
+                <div id="minFastingRooms" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+            </div>
+
         </div>
     </div>
 
@@ -497,7 +516,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDPdkKqPdY73A59To_x1pSSSB_vNyXb-3A",
   authDomain: "ekadasi-8ced1.firebaseapp.com",
@@ -612,7 +631,7 @@ const firebaseConfig = {
                         'bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-purple-100'
                     }`;
                     
-                    btn.innerHTML = `<span class="text-lg font-bold">${room}</span>`;
+                    btn.innerHTML = `<span class="font-bold">${room}</span>`;
                     
                     btn.onclick = () => selectRoomNumber(room); 
                     container.appendChild(btn);
@@ -888,15 +907,66 @@ const firebaseConfig = {
                 }
             });
             
-            const maxCount = Math.max(...Object.values(roomNonFastingBedCount), 0);
-            const maxRooms = Object.keys(roomNonFastingBedCount).filter(room => roomNonFastingBedCount[room] === maxCount);
+            const maxNonFastingCount = Math.max(...Object.values(roomNonFastingBedCount), 0);
+            const maxNonFastingRooms = Object.keys(roomNonFastingBedCount).filter(room => roomNonFastingBedCount[room] === maxNonFastingCount);
             
-            maxRooms.forEach(room => {
+            maxNonFastingRooms.forEach(room => {
                 const span = document.createElement('span');
                 span.className = 'px-4 py-3 bg-gradient-to-br from-red-100 to-red-200 border border-red-300 rounded-xl text-center font-semibold text-red-800';
                 span.textContent = room;
                 maxNonFastingContainer.appendChild(span);
             });
+
+            // Find rooms with highest fasting beds
+            const roomFastingBedCount = {};
+            recordsForSelectedDate.forEach(record => {
+                if (record.status === 'fasting') {
+                    roomFastingBedCount[record.room] = (roomFastingBedCount[record.room] || 0) + 1;
+                }
+            });
+
+            const maxFastingContainer = document.getElementById('maxFastingRooms');
+            maxFastingContainer.innerHTML = '';
+            const maxFastingCount = Math.max(...Object.values(roomFastingBedCount), 0);
+            const highestFastingRooms = Object.keys(roomFastingBedCount).filter(room => roomFastingBedCount[room] === maxFastingCount);
+
+            highestFastingRooms.forEach(room => {
+                const span = document.createElement('span');
+                span.className = 'px-4 py-3 bg-gradient-to-br from-blue-100 to-blue-200 border border-blue-300 rounded-xl text-center font-semibold text-blue-800';
+                span.textContent = room;
+                maxFastingContainer.appendChild(span);
+            });
+
+            // Find rooms with lowest fasting beds
+            const minFastingContainer = document.getElementById('minFastingRooms');
+            minFastingContainer.innerHTML = '';
+            let minFastingCount = Infinity;
+            if (Object.values(roomFastingBedCount).length > 0) {
+                minFastingCount = Math.min(...Object.values(roomFastingBedCount));
+            }
+            
+            const lowestFastingRooms = Object.keys(roomFastingBedCount).filter(room => roomFastingBedCount[room] === minFastingCount);
+
+            // Handle case where no rooms have fasting data (all 0 or no records)
+            if (lowestFastingRooms.length === 0 && Object.keys(roomFastingBedCount).length > 0) {
+                // If there are rooms with data, but none have fasting, it means all fasting counts are 0.
+                // In this case, all rooms with 0 fasting beds are "lowest".
+                allRooms.forEach(room => {
+                    if (!roomFastingBedCount[room] || roomFastingBedCount[room] === 0) {
+                        const span = document.createElement('span');
+                        span.className = 'px-4 py-3 bg-gradient-to-br from-orange-100 to-orange-200 border border-orange-300 rounded-xl text-center font-semibold text-orange-800';
+                        span.textContent = room;
+                        minFastingContainer.appendChild(span);
+                    }
+                });
+            } else {
+                lowestFastingRooms.forEach(room => {
+                    const span = document.createElement('span');
+                    span.className = 'px-4 py-3 bg-gradient-to-br from-orange-100 to-orange-200 border border-orange-300 rounded-xl text-center font-semibold text-orange-800';
+                    span.textContent = room;
+                    minFastingContainer.appendChild(span);
+                });
+            }
         }
 
         // Function to update the floor-wise fasting/non-fasting chart
@@ -923,7 +993,7 @@ const firebaseConfig = {
             const ctx = document.getElementById('floorWiseChart').getContext('2d');
 
             if (floorWiseChartInstance) {
-                floorWiseChartInstance.destroy(); // Destroy existing chart instance
+                floorWiseChartInstance.destroy(); // Destroy existing chart instance to prevent rendering issues
             }
 
             floorWiseChartInstance = new Chart(ctx, {
