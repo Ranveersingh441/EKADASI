@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ekadasi Fasting Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         
@@ -368,6 +369,16 @@
                 </div>
             </div>
 
+            <!-- Floor-wise Fasting/Non-Fasting Chart -->
+            <div class="glass-effect rounded-3xl p-8 mb-8">
+                <h3 class="text-2xl font-semibold mb-6 text-gray-700 text-center">Floor-wise Fasting & Non-Fasting Trends</h3>
+                <div class="mb-4 text-center">
+                    <label for="reportDateFilter" class="block text-lg font-semibold text-gray-700 mb-2">Select Date for Chart:</label>
+                    <input type="date" id="reportDateFilter" class="p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" onchange="updateReports()">
+                </div>
+                <canvas id="floorWiseChart"></canvas>
+            </div>
+
             <!-- No Non-Fasting Rooms -->
             <div class="glass-effect rounded-3xl p-8 mb-8">
                 <div class="flex items-center mb-6">
@@ -486,7 +497,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <script>
-     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDPdkKqPdY73A59To_x1pSSSB_vNyXb-3A",
   authDomain: "ekadasi-8ced1.firebaseapp.com",
@@ -509,9 +520,13 @@ const firebaseConfig = {
         let selectedBeds = []; // Changed to an array for multiple selections
         let currentOption = null;
         let allRecords = []; // This will be populated from Firebase
+        let floorWiseChartInstance = null; // To store the Chart.js instance
 
         // Initialize the application
         function init() {
+            // Set default date for report filter to today
+            document.getElementById('reportDateFilter').value = getTodayDate();
+
             // Listen for real-time updates from Firebase
             recordsRef.on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -792,15 +807,15 @@ const firebaseConfig = {
 
         // Update reports page
         function updateReports() {
-            const today = getTodayDate();
-            const todayRecords = allRecords.filter(r => r.date === today);
+            const selectedDate = document.getElementById('reportDateFilter').value || getTodayDate();
+            const recordsForSelectedDate = allRecords.filter(r => r.date === selectedDate);
             const totalPossibleBeds = 6 * 14 * 16; 
             
             // Update totals with progress bars (now counting beds)
-            const fastingCount = todayRecords.filter(r => r.status === 'fasting').length;
-            const nonFastingCount = todayRecords.filter(r => r.status === 'non-fasting').length;
-            const gatepassCount = todayRecords.filter(r => r.status === 'gatepass').length;
-            const emptyCount = todayRecords.filter(r => r.status === 'empty').length;
+            const fastingCount = recordsForSelectedDate.filter(r => r.status === 'fasting').length;
+            const nonFastingCount = recordsForSelectedDate.filter(r => r.status === 'non-fasting').length;
+            const gatepassCount = recordsForSelectedDate.filter(r => r.status === 'gatepass').length;
+            const emptyCount = recordsForSelectedDate.filter(r => r.status === 'empty').length;
             
             document.getElementById('totalFasting').textContent = fastingCount;
             document.getElementById('totalNonFasting').textContent = nonFastingCount;
@@ -835,10 +850,12 @@ const firebaseConfig = {
                 el.style.width = totalTransitions > 0 ? `${(transitions.nonFastingToFasting / totalTransitions) * 100}%` : '0%';
             });
 
+            // Update Floor-wise Fasting/Non-Fasting Chart
+            updateFloorWiseChart(recordsForSelectedDate);
 
             // Find rooms with no non-fasting beds
             const roomsWithNonFastingBeds = new Set(
-                todayRecords.filter(r => r.status === 'non-fasting').map(r => r.room)
+                recordsForSelectedDate.filter(r => r.status === 'non-fasting').map(r => r.room)
             );
             
             const allRooms = [];
@@ -865,7 +882,7 @@ const firebaseConfig = {
             
             // Calculate rooms with highest non-fasting frequency (based on beds)
             const roomNonFastingBedCount = {};
-            todayRecords.forEach(record => { // Changed to todayRecords for current day's report
+            recordsForSelectedDate.forEach(record => { // Changed to recordsForSelectedDate for current day's report
                 if (record.status === 'non-fasting') {
                     roomNonFastingBedCount[record.room] = (roomNonFastingBedCount[record.room] || 0) + 1;
                 }
@@ -881,6 +898,88 @@ const firebaseConfig = {
                 maxNonFastingContainer.appendChild(span);
             });
         }
+
+        // Function to update the floor-wise fasting/non-fasting chart
+        function updateFloorWiseChart(records) {
+            const floorData = {};
+            for (let i = 1; i <= 6; i++) {
+                floorData[i] = { fasting: 0, nonFasting: 0 };
+            }
+
+            records.forEach(record => {
+                if (record.floor && floorData[record.floor]) {
+                    if (record.status === 'fasting') {
+                        floorData[record.floor].fasting++;
+                    } else if (record.status === 'non-fasting') {
+                        floorData[record.floor].nonFasting++;
+                    }
+                }
+            });
+
+            const labels = Object.keys(floorData).map(floor => `Floor ${floor}`);
+            const fastingCounts = Object.values(floorData).map(data => data.fasting);
+            const nonFastingCounts = Object.values(floorData).map(data => data.nonFasting);
+
+            const ctx = document.getElementById('floorWiseChart').getContext('2d');
+
+            if (floorWiseChartInstance) {
+                floorWiseChartInstance.destroy(); // Destroy existing chart instance
+            }
+
+            floorWiseChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Fasting Beds',
+                            data: fastingCounts,
+                            backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Non-Fasting Beds',
+                            data: nonFastingCounts,
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: 'Floor'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Beds'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Floor-wise Fasting vs. Non-Fasting Beds',
+                            font: {
+                                size: 18
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
 
         // Update all records page
         function updateAllRecords() {
